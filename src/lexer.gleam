@@ -1,4 +1,3 @@
-import gleam/io
 import gleam/option.{type Option, None, Some}
 import gleam/string
 
@@ -18,31 +17,40 @@ pub type Token {
 
 fn scan_token(
   char: String,
-  //  line: Int,
-  // column: Int,
-) -> Result(Option(Token), String) {
+  line: Int,
+  column: Int,
+) -> Result(#(Option(Token), Int), String) {
   case char {
-    "(" -> Ok(Some(LParen(0, 0, char)))
-    ")" -> Ok(Some(RParen(0, 0, char)))
-    "\n" | "" -> Ok(None)
+    "(" -> Ok(#(Some(LParen(line, column, char)), line))
+    ")" -> Ok(#(Some(RParen(line, column, char)), line))
+    "\n" -> Ok(#(None, line + 1))
+    "" -> Ok(#(None, line))
     _ -> Error("Unexpected token: " <> char)
   }
 }
 
-pub fn lex(input: String, column: Int, tokens: List(Token)) -> Result(List(Token), String) {
+pub fn lex(
+  input: String,
+  pos: Int,
+  line: Int,
+  column: Int,
+  tokens: List(Token),
+) -> Result(List(Token), String) {
   case string.first(input) {
-    Ok(c) -> {
-      case scan_token(c) {
-        Ok(Some(t)) -> {
-          string.slice(input, column + 1, string.length(input))
-          |> lex(column + 1, [t, ..tokens])
+    Ok(char) -> {
+      let next_pos = pos + 1
+      case scan_token(char, line, column) {
+        Ok(#(Some(t), next_line)) -> {
+          string.slice(input, 1, string.length(input))
+          |> lex(next_pos, next_line, column + 1, [t, ..tokens])
         }
-        Ok(None) -> {
-          Ok(tokens)
+        Ok(#(None, next_line)) -> {
+          string.slice(input, 1, string.length(input))
+          |> lex(next_pos, next_line, 1, tokens)
         }
         Error(e) -> Error(e)
       }
     }
-    Error(..) -> Ok(tokens)
+    Error(_) -> Ok(tokens)
   }
 }

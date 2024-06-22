@@ -13,7 +13,8 @@ pub fn hello_world_test() {
 }
 
 pub fn lexer_test() {
-    let expected = Ok([lexer.LParen(0, 0, "(")])
-    lexer.lex("(", 0, [])
-    |> should.equal(expected)
+  let src = "(\n)"
+  let expected = Ok([lexer.RParen(2, 1, ")"), lexer.LParen(1, 1, "(")])
+  lexer.lex(src, 0, 1, 1, [])
+  |> should.equal(expected)
 }
